@@ -3,29 +3,47 @@ import React, { Component } from 'react';
 class AudioVisuliser extends Component {
 
 
-    constructor(props) {
-        super(props);
+    constructor(props) { //WIDTH 1200, HEIGHT 700
+        super(props);     //or 640 x 270
         this.canvas = React.createRef();
         this.state = {
-            WIDTH: 1200,
-            HEIGHT: 700
+          //mode        : 0,
+          //fftSize     : 8192,
+          //minFreq     : 20,
+          //maxFreq     : 22000,
+          //smoothing   : 0.5,
+          //gradient    : 'classic',
+          //minDb       : -85,
+          //maxDb       : -25,
+          //showBgColor : true,
+          //showLeds    : false,
+          //showScale   : true,
+          //showPeaks   : true,
+          //showFPS     : false,
+          //loRes       : false,*/
+          idth       : 640,
+          height      : 270
         }
     }
+
+    //----TEST--------//
+
+
+
+
+
+    //---TEST END--////
 
     componentDidUpdate() {
         this.draw();
     }
 
+    /*
     draw() {
         const audioData = this.props.audioData;
         const canvas = this.canvas.current;
         const ctx = canvas.getContext("2d");
-        console.log('canvas.width: ', this.canvas.height, 'canvas.height: ', this.canvas.width);
-        console.log('this.state.WIDTH: ', this.state.WIDTH, 'this.state.HEIGHT: ', this.state.HEIGHT);
-        console.log('props.bufferLength: ', this.props.bufferLength);
-        const barWidth = (this.state.WIDTH / this.props.bufferLength) * 10;
-        console.log('barWidth: ', barWidth);
-        console.log('TOTAL WIDTH: ', (117 * 10) + (118 * barWidth));
+        const barWidth = (this.state.width / this.props.bufferLength) * 10;
 
         let barHeight;
         let x = 0;
@@ -35,7 +53,7 @@ class AudioVisuliser extends Component {
 
 
         ctx.fillStyle = `rgba(0,0,0,0.2)`;
-        ctx.clearRect(0, 0, this.state.WIDTH, this.state.HEIGHT);
+        ctx.clearRect(0, 0, this.state.width, this.state.height);
 
         r = 250;
         g = 0;
@@ -70,20 +88,21 @@ class AudioVisuliser extends Component {
                 g = 12
                 b = 255
             }
-            */
+            
 
             ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-            ctx.fillRect(x, (this.state.HEIGHT - barHeight), this.state.WIDTH / bars, this.state.HEIGHT);
+            ctx.fillRect(x, (this.state.height - barHeight), this.state.width / bars, this.state.height);
             // (x, y, i, j)
             // (x, y) represents start point
             // (i, j) represents end point
 
-            x += barWidth + 10; // Gives 10px space between each bar
+            x += barWidth + 5; // Gives 10px space between each bar
         }
     }
+    */
 
     render() {
-        return <canvas width={this.state.WIDTH} height={this.state.HEIGHT} ref={this.canvas} />
+        return <canvas width={this.state.width} height={this.state.height} ref={this.canvas} />
     }
 }
 
