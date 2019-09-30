@@ -419,7 +419,7 @@ function preCalcPosX() {
  		var pos,
  			lastPos = -1,
 			minIndex = Math.floor( minFreq * analyzer.fftSize / audioCtx.sampleRate ),
-		    maxIndex = Math.min( Math.round( maxFreq * analyzer.fftSize / audioCtx.sampleRate ), analyzer.frequencyBinCount - 1 );
+		  maxIndex = Math.min( Math.round( maxFreq * analyzer.fftSize / audioCtx.sampleRate ), analyzer.frequencyBinCount - 1 );
 
 		for ( i = minIndex; i <= maxIndex; i++ ) {
 			freq = i * audioCtx.sampleRate / analyzer.fftSize; // frequency represented in this bin
