@@ -16,7 +16,6 @@ class App extends Component {
       maxFreq: 22000,
       width: 1280,
       height: 640
-      //analyserBars: [ {posX: 0, dataIdx: 0, endIdx: 0, average: false, peak: 0, hold: 0, accel: 0 } ]
 
     };
     this.trigger = this.trigger.bind(this);
@@ -52,8 +51,22 @@ class App extends Component {
       window.webkitAudioContext)();
     this.track = this.audioCtx.createMediaElementSource(this.player);
     this.analyser = this.audioCtx.createAnalyser();
-    this.track.connect(this.analyser);
-    this.analyser.connect(this.audioCtx.destination);
+
+    //The audio signal is too loud when going in to analyser
+    //We reduce the gain before analyser
+    //and increase the gain back after analyser
+
+    //Create gain
+    this.gainPreAnalyser = this.audioCtx.createGain()
+    this.gainPreAnalyser.gain.value = 0.25;
+    this.gainPostAnalyser = this.audioCtx.createGain()
+    this.gainPostAnalyser.gain.value = 4;
+
+    //Connect
+    this.track.connect(this.gainPreAnalyser);
+    this.gainPreAnalyser.connect(this.analyser);
+    this.analyser.connect(this.gainPostAnalyser);
+    this.gainPostAnalyser.connect(this.audioCtx.destination);
 
 
     // this.analyser.fftSize = 32;
@@ -63,9 +76,9 @@ class App extends Component {
     //this.analyser.fftSize = 512;
     // this.analyser.fftSize = 1024;
     //this.analyser.fftSize = 2048;
-    //this.analyser.fftSize = 4096;
+    this.analyser.fftSize = 4096;
     //this.analyser.fftSize = 8192;
-    this.analyser.fftSize = 16384;
+    //this.analyser.fftSize = 16384;
     //this.analyser.fftSize = 32768;
 
     //sparar analyserBars från precalcX i barData
@@ -103,13 +116,11 @@ class App extends Component {
         freq = i * sampleRate / fftSize;
         pos = Math.round( bandWidth * ( Math.log10( freq ) - minLog) );
 
-        //  console.log('Får vi ut posX:?', pos);
 
-         //Amplitud - samma frekvensbars bygger på varandra
         if ( pos > lastPos ) {
           analyserBars.push({posX: pos, dataIdx: i, endIdx: 0, average: false, peak: 0, hold: 0, accel: 0 } );
           lastPos = pos;
-           //console.log('if :', analyserBars[analyserBars.length-1].posX);
+
          }
          else if (analyserBars.length) {
            analyserBars[ analyserBars.length - 1 ].endIdx = i;
@@ -160,17 +171,6 @@ class App extends Component {
       canvasCtx.fillStyle = 'black';
 
 
-      /*let gradient = {
-      		bgColor: 'orange',
-      		colorStops: [
-      			'hsl( 0, 80%, 50% )', = 0
-      			'hsl( 60, 80%, 50% )', = 0.2
-      			'hsl( 120, 80%, 50% )', = 0.4
-      			'hsl( 180, 80%, 50% )', = 0.6
-      			'hsl( 240, 80%, 50% )', = 0.8
-      		]
-      }*/
-
       //--testing gradient---//
       let grd = canvasCtx.createLinearGradient(0, 0, 0, canvas.height);
       grd.addColorStop (0, 'hsl( 60, 80%, 50% )');
@@ -179,7 +179,7 @@ class App extends Component {
       grd.addColorStop (0.6, 'hsl( 180, 80%, 50% )');
       grd.addColorStop(0.8, 'hsl( 240, 80%, 50% )');
 
-
+      console.log('audioData', audioData);
 
       //grd.addColorStop (0.4, 'green');
       //grd.addColorStop (0.3, 'yellow');
@@ -189,26 +189,28 @@ class App extends Component {
       /*grd.addColorStop('hsla( 0, 80%, 50% )');*/
 
 
-
-
       //clear canvas
       canvasCtx.fillRect( 0, 0, canvas.width, canvas.height );
 
       for(let i = 0; i < l; i++) {
         bar = this.barData[i];
 
-        if (bar.endIdx == 0) { // single FFT bin
+      //  if (bar.endIdx == 0) { // single FFT bin
           //getByteFrequencyData frequency data is composed of integers on a scale = 0-255 * height = 640
-          barHeight = (audioData[bar.dataIdx] / 255)*canvas.height;
-        }
-        else { 	// range of bins
+          barHeight = Math.round((audioData[bar.dataIdx] / 255) * canvas.height);
+
+
+
+      //  }
+
+      /*  else { 	// range of bins
           barHeight = 0;
           if( bar.average) {
             //use the average value of the range
             for(let j = bar.dataIdx; j <= bar.endIdx; j++)
             {
               barHeight += audioData[j];
-              barHeight = barHeight / (bar.endIdx -  bar.dataIdx + 1);
+              barHeight = (barHeight / (bar.endIdx -  bar.dataIdx + 1));
             }
           }
           else {
@@ -217,18 +219,28 @@ class App extends Component {
               barHeight = Math.max(barHeight, audioData [j]);
             }
           }
-        }
-
+        }*/
 
         //--PEAK--//
         if (barHeight >= bar.peak) {
           bar.peak = barHeight;
-          bar.hold = 30; //set peak hold time to 30 frames (0,5s since 60frames/sek)
-          bar.accel = 0;
+          bar.hold = 20; //set peak hold time to 30 frames (0,5s since 60frames/sek)
+          bar.zeropoint = 0;
         }
 
+
         canvasCtx.fillStyle = grd;
-        canvasCtx.fillRect( bar.posX, canvas.height, this.barWidth, -barHeight );
+        canvasCtx.fillRect( bar.posX, canvas.height, this.barWidth, -barHeight);
+        canvasCtx.fillRect( bar.posX, canvas.height - bar.peak, this.barWidth, 2)
+
+        if (bar.hold) {
+          bar.hold--;
+        }
+        else {
+          bar.zeropoint++;
+          bar.peak -= bar.zeropoint;
+        }
+
       }
 
 
@@ -301,9 +313,6 @@ class App extends Component {
 
 
 
-
-
-
   render() {
     let display = this.state.status ? { display: "block" } : { display: "none" };
     let displayButton = this.state.status ? { display: "none" } : { display: "block" };
@@ -311,7 +320,7 @@ class App extends Component {
 
     let content = (
       <div>
-        <div onClick={this.trigger} style={displayButton}>Press to enter viz</div>
+        <div onClick={this.trigger} class="button" style={displayButton}>Press to enter viz</div>
 
         <div style={display}>
           <canvas width={this.state.width} height={this.state.height} ref={this.canvas} />

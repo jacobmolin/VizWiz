@@ -17,13 +17,21 @@
   color: white;
 }
 
+
 .App-link {
   color: #09d3ac;
 }
 
+.button {
+  font-size: 64px;
+  cursor: pointer;
+}
+
+
+
 canvas {
   /* width: 100%;
-  display: flex; 
+  display: flex;
   justify-content: center;
   height: 80vh;*/
   outline: white, 3px, solid !important;
