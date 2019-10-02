@@ -160,18 +160,36 @@ class App extends Component {
       canvasCtx.fillStyle = 'black';
 
 
-      /*let gradients = {
-        prism:   {
-      		bgColor: '#111',
+      /*let gradient = {
+      		bgColor: 'orange',
       		colorStops: [
-      			'hsl( 0, 80%, 50% )',
-      			'hsl( 60, 80%, 50% )',
-      			'hsl( 120, 80%, 50% )',
-      			'hsl( 180, 80%, 50% )',
-      			'hsl( 240, 80%, 50% )',
+      			'hsl( 0, 80%, 50% )', = 0
+      			'hsl( 60, 80%, 50% )', = 0.2
+      			'hsl( 120, 80%, 50% )', = 0.4
+      			'hsl( 180, 80%, 50% )', = 0.6
+      			'hsl( 240, 80%, 50% )', = 0.8
       		]
-      	},
       }*/
+
+      //--testing gradient---//
+      let grd = canvasCtx.createLinearGradient(0, 0, 0, canvas.height);
+      grd.addColorStop (0, 'hsl( 60, 80%, 50% )');
+      grd.addColorStop (0.2, 'hsl( 60, 80%, 50% )');
+      grd.addColorStop (0.4, 'hsl( 120, 80%, 50% )');
+      grd.addColorStop (0.6, 'hsl( 180, 80%, 50% )');
+      grd.addColorStop(0.8, 'hsl( 240, 80%, 50% )');
+
+
+
+      //grd.addColorStop (0.4, 'green');
+      //grd.addColorStop (0.3, 'yellow');
+      //grd.addColorStop (0.2, 'orange');
+      //grd.addColorStop(0.05, 'red');
+
+      /*grd.addColorStop('hsla( 0, 80%, 50% )');*/
+
+
+
 
       //clear canvas
       canvasCtx.fillRect( 0, 0, canvas.width, canvas.height );
@@ -180,7 +198,8 @@ class App extends Component {
         bar = this.barData[i];
 
         if (bar.endIdx == 0) { // single FFT bin
-          barHeight = audioData [bar.dataIdx]
+          //getByteFrequencyData frequency data is composed of integers on a scale = 0-255 * height = 640
+          barHeight = (audioData[bar.dataIdx] / 255)*canvas.height;
         }
         else { 	// range of bins
           barHeight = 0;
@@ -200,11 +219,6 @@ class App extends Component {
           }
         }
 
-        //---isLedDisplay---//
-        /*if ( isLedDisplay ) // normalize barHeight to match one of the "led" elements
-          barHeight = ( barHeight / 255 * ledOptions.nLeds | 0 ) * ( ledOptions.ledHeight + ledOptions.spaceV );
-        else
-          barHeight = barHeight / 255 * canvas.height | 0;*/
 
         //--PEAK--//
         if (barHeight >= bar.peak) {
@@ -213,14 +227,9 @@ class App extends Component {
           bar.accel = 0;
         }
 
-        canvasCtx.fillStyle = 'orange';
-        //if ( isLedDisplay )
-        //  canvasCtx.fillRect( bar.posX + ledOptions.spaceH / 2, canvas.height, barWidth, -barHeight );
-        //else
+        canvasCtx.fillStyle = grd;
         canvasCtx.fillRect( bar.posX, canvas.height, this.barWidth, -barHeight );
       }
-
-
 
 
 
