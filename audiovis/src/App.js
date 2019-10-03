@@ -11,6 +11,7 @@ class App extends Component {
       audio: null,
       status: null,
       audioData: new Uint8Array(0),
+      audioTimeData: new Uint8Array(0),
       paused: true,
       minFreq: 20,
       maxFreq: 22000,
@@ -26,7 +27,7 @@ class App extends Component {
     this.draw = this.draw.bind(this);
     this.canvas = React.createRef();
 
-    this.barData = null;
+    //this.barData = null;
   }
 
   //-----Player-----//
@@ -61,12 +62,11 @@ class App extends Component {
     this.gainPostAnalyser = this.audioCtx.createGain();
     this.gainPostAnalyser.gain.value = 4;
 
-    // Connect
+    // Connect track -> gainPre -> analyser -> gainPost -> destination
     this.track.connect(this.gainPreAnalyser);
     this.gainPreAnalyser.connect(this.analyser);
     this.analyser.connect(this.gainPostAnalyser);
     this.gainPostAnalyser.connect(this.audioCtx.destination);
-
 
     // this.analyser.fftSize = 32;
     // this.analyser.fftSize = 64;
@@ -74,14 +74,14 @@ class App extends Component {
     // this.analyser.fftSize = 256;
     // this.analyser.fftSize = 512;
     // this.analyser.fftSize = 1024;
-    // this.analyser.fftSize = 2048;
-    this.analyser.fftSize = 4096;
+    this.analyser.fftSize = 2048;
+    // this.analyser.fftSize = 4096;
     // this.analyser.fftSize = 8192;
     // this.analyser.fftSize = 16384;
     // this.analyser.fftSize = 32768;
 
-    //sparar analyserBars från precalcX i barData
-    //barData bestämmer x-axeln som en array
+    //sparar analyserBars från preCalcX() i this.analyserBars
+    //analyserBars bestämmer x-axeln som en array
     this.analyserBars = this.preCalcPosX();
 
     this.bufferLength = this.analyser.frequencyBinCount;
@@ -91,7 +91,6 @@ class App extends Component {
   }
 
   preCalcPosX() {
-
     const minFreq = this.state.minFreq;
     const maxFreq = this.state.maxFreq;
     const width = this.state.width;
@@ -144,14 +143,15 @@ class App extends Component {
       if (label.freq >= 1000)
         label.freq = (label.freq / 1000) + 'k';
     });
-
     return analyserBars;
   }
 
   tick() {
     if (!(this.state.paused)) {
       this.analyser.getByteFrequencyData(this.dataArray);
-      this.setState({ audioData: this.dataArray });
+      this.analyser.getByteTimeDomainData(this.timeDataArray);
+      this.setState({ audioData: this.dataArray,
+                      audioTimeData: this.timeDataArray});
       this.draw();
     }
     requestAnimationFrame(this.tick);
@@ -179,7 +179,7 @@ class App extends Component {
         ]
     }*/
 
-    //--testing gradient---//
+    //-- GRADIENTS ---//
     let grd = canvasCtx.createLinearGradient(0, 0, 0, canvas.height);
     grd.addColorStop(0, 'hsl( 60, 80%, 50% )');
     grd.addColorStop(0.2, 'hsl( 60, 80%, 50% )');
@@ -187,20 +187,30 @@ class App extends Component {
     grd.addColorStop(0.6, 'hsl( 180, 80%, 50% )');
     grd.addColorStop(0.8, 'hsl( 240, 80%, 50% )');
 
+    let grdClassic = canvasCtx.createLinearGradient(0, 0, 0, canvas.height);
+    grdClassic.addColorStop(0, 'hsl( 0, 100%, 50% )');
+    grdClassic.addColorStop(0.6, 'hsl( 60, 100%, 50% )');
+    grdClassic.addColorStop(1, 'hsl( 120, 100%, 50% )');
+
     // Clear canvas
     canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
     for (let i = 0; i < l; i++) {
       bar = this.analyserBars[i];
 
+      /*--- I have commented out a lot here
+      because it's not needed in our case,
+      UNLESS we want to use bar.average ---*/
+
+
       // if (bar.endIdx === 0) { // single FFT bin
       //getByteFrequencyData frequency data is composed of integers on a scale = 0-255 * height = 640
       barHeight = Math.round((audioData[bar.dataIdx] / 255 * canvas.height));
 
       /*   }
-      //  else { 	// range of bins
-      //   barHeight = 0;
-      /* if (bar.average) {
+        else { 	// range of bins
+         barHeight = 0;
+       if (bar.average) {
          //use the average value of the range
          for (let j = bar.dataIdx; j <= bar.endIdx; j++) {
            barHeight += audioData[j];
@@ -215,7 +225,7 @@ class App extends Component {
         }*/
 
 
-      //--PEAK--//
+      //--- PEAK ---//
       if (barHeight >= bar.peak) {
         bar.peak = barHeight;
         bar.hold = 30; //set peak hold time to 30 frames (0,5s since 60frames/sek)
@@ -223,9 +233,15 @@ class App extends Component {
         bar.zeropoint = 0;
       }
 
+
       canvasCtx.fillStyle = grd;
-      canvasCtx.fillRect(bar.posX, canvas.height, this.barWidth, -barHeight);
+      
+      /*--- Draw one bar for amplitude (dB) = barHeight
+       at the frequency (Hz) = bar.posX ---*/
+
+      //canvasCtx.fillRect(bar.posX, canvas.height, this.barWidth, -barHeight);
       //canvasCtx.fillRect( bar.posX, canvas.height - bar.peak, this.barWidth, 2)
+
 
       /*
       if (bar.hold) {
@@ -238,8 +254,8 @@ class App extends Component {
       */
 
       if (bar.peak > 0) {
+        // Draw peak dots
         //canvasCtx.fillRect(bar.posX, canvas.height - bar.peak, this.barWidth, 2);
-
         if (bar.hold)
           bar.hold--;
         else {
@@ -247,43 +263,69 @@ class App extends Component {
           bar.peak -= bar.accel;
         }
       }
+      // Save data to draw lines and/or fields for graphs
       graphData[i] = { x: bar.posX, yPeak: Math.floor(bar.peak), yReg: Math.floor(barHeight) };
     }
 
 
-    // Draw regular graph
-    canvasCtx.strokeStyle = 'hsla(342,0%,90%, 0.6)';
-    canvasCtx.lineWidth = 1.5;
+    // Bar to check gradient
+    // canvasCtx.fillStyle = grdClassic;
+    canvasCtx.fillStyle = grd;
+    canvasCtx.fillRect(canvas.width-30, canvas.height, 30, -canvas.height);
+
+
+    //--- VISUALISE FIELD ---//
+    // Create path for field under graph
+    let region = new Path2D();
+    region.moveTo(0, canvas.height);
 
     for (let j = 0; j < graphData.length; j++) {
-      if (j === 0) {
-        canvasCtx.beginPath();
-        canvasCtx.moveTo(0, canvas.height);
-        canvasCtx.lineTo(graphData[j].x, canvas.height - graphData[j].yReg);
-        canvasCtx.stroke();
-      } else {
-        canvasCtx.beginPath();
-        canvasCtx.moveTo(graphData[j - 1].x, canvas.height - graphData[j - 1].yReg);
-        canvasCtx.lineTo(graphData[j].x, canvas.height - graphData[j].yReg);
-        canvasCtx.stroke();
-      }
+      region.lineTo(graphData[j].x, canvas.height - graphData[j].yReg);
     }
+    region.closePath();
+
+    // Fill field under path
+    canvasCtx.fillStyle = grdClassic;
+    canvasCtx.fill(region);
+
+    /*
+    // Draw regular graph
+        canvasCtx.strokeStyle = 'hsla(342,0%,90%, 0.6)';
+        canvasCtx.lineWidth = 1.5;
+    
+        for (let j = 0; j < graphData.length; j++) {
+          if (graphData[j].yReg !== 0) {
+            if (j === 0) {
+              canvasCtx.beginPath();
+              canvasCtx.moveTo(0, canvas.height);
+              canvasCtx.lineTo(graphData[j].x, canvas.height - graphData[j].yReg);
+              canvasCtx.stroke();
+            } else {
+              canvasCtx.beginPath();
+              canvasCtx.moveTo(graphData[j - 1].x, canvas.height - graphData[j - 1].yReg);
+              canvasCtx.lineTo(graphData[j].x, canvas.height - graphData[j].yReg);
+              canvasCtx.stroke();
+            }
+          }
+        }*/
 
     // Draw peak-graph
-    canvasCtx.strokeStyle = 'hsla(0,77%,50%, 0.4)';
+    canvasCtx.strokeStyle = grdClassic;  //'hsla(0,77%,50%, 0.4)'
     canvasCtx.lineWidth = 1.5;
 
     for (let j = 0; j < graphData.length; j++) {
-      if (j === 0) {
-        canvasCtx.beginPath();
-        canvasCtx.moveTo(0, canvas.height);
-        canvasCtx.lineTo(graphData[j].x, canvas.height - graphData[j].yPeak);
-        canvasCtx.stroke();
-      } else {
-        canvasCtx.beginPath();
-        canvasCtx.moveTo(graphData[j - 1].x, canvas.height - graphData[j - 1].yPeak);
-        canvasCtx.lineTo(graphData[j].x, canvas.height - graphData[j].yPeak);
-        canvasCtx.stroke();
+      if (graphData[j].yPeak !== 0) {
+        if (j === 0) {
+          canvasCtx.beginPath();
+          canvasCtx.moveTo(0, canvas.height);
+          canvasCtx.lineTo(graphData[j].x, canvas.height - graphData[j].yPeak);
+          canvasCtx.stroke();
+        } else {
+          canvasCtx.beginPath();
+          canvasCtx.moveTo(graphData[j - 1].x, canvas.height - graphData[j - 1].yPeak);
+          canvasCtx.lineTo(graphData[j].x, canvas.height - graphData[j].yPeak);
+          canvasCtx.stroke();
+        }
       }
     }
 
@@ -303,14 +345,7 @@ class App extends Component {
      freqLabels.forEach( label => canvasCtx.fillText( label.freq, label.posX, canvas.height - size ) );
    }
 */
-
-
   }
-
-
-
-
-
 
 
 
@@ -326,7 +361,7 @@ class App extends Component {
         <div style={display}>
           <canvas width={this.state.width} height={this.state.height} ref={this.canvas} />
           <figure>
-            <figcaption>Listen to Magic:</figcaption>
+            <figcaption>Play to visualize</figcaption>
             <audio controls src={magicAudio} id="player" onPlay={this.handlePlay} onPause={this.handlePause}>
               Your browser does not support the
             <code>audio</code> element.
@@ -343,7 +378,6 @@ class App extends Component {
         <main>
           <header className="App-header">
             <div className="controls">
-              {/*<AudioVisuliser audioData={this.state.audioData} bufferLength={this.bufferLength}/>*/}
               {content}
             </div>
           </header>
