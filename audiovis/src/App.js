@@ -149,9 +149,9 @@ class App extends Component {
   tick() {
     if (!(this.state.paused)) {
       this.analyser.getByteFrequencyData(this.dataArray);
-      this.analyser.getByteTimeDomainData(this.timeDataArray);
-      this.setState({ audioData: this.dataArray,
-                      audioTimeData: this.timeDataArray});
+      //this.analyser.getByteTimeDomainData(this.timeDataArray);
+      this.setState({ audioData: this.dataArray});
+      //audioTimeData: this.timeDataArray
       this.draw();
     }
     requestAnimationFrame(this.tick);
@@ -271,7 +271,7 @@ class App extends Component {
     // Bar to check gradient
     // canvasCtx.fillStyle = grdClassic;
     canvasCtx.fillStyle = grd;
-    canvasCtx.fillRect(canvas.width-30, canvas.height, 30, -canvas.height);
+    //canvasCtx.fillRect(canvas.width-30, canvas.height, 30, -canvas.height);
 
 
     //--- VISUALISE FIELD ---//
