@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
 import magicAudio from './resources/Magic - Coldplay.mp3';  // 20_20k_sweep.mp3
-//import AudioVisuliser from './AudioVisuliser';
+//import playIcon from './resources/play_icon.png';
 
 class App extends Component {
 
@@ -15,7 +15,7 @@ class App extends Component {
       paused: true,
       minFreq: 20,
       maxFreq: 22000,
-      width: 1280,
+      width: 1500,
       height: 640
     };
     this.trigger = this.trigger.bind(this);
@@ -26,8 +26,6 @@ class App extends Component {
     this.preCalcPosX = this.preCalcPosX.bind(this);
     this.draw = this.draw.bind(this);
     this.canvas = React.createRef();
-
-    //this.barData = null;
   }
 
   //-----Player-----//
@@ -124,7 +122,7 @@ class App extends Component {
 
 
     // calculate the position of the labels (octaves center frequencies) for the X-axis scale
-    const freqLabels = [
+    this.freqLabels = [
       { freq: 16 },
       { freq: 31 },
       { freq: 63 },
@@ -138,8 +136,12 @@ class App extends Component {
       { freq: 16000 }
     ];
 
-    freqLabels.forEach(label => {
-      label.posX = width * (Math.log10(label.freq) - minLog);
+
+    // const bandWidth = width / (Math.log10(maxFreq) - minLog);
+    // pos = Math.round(bandWidth * (Math.log10(freq) - minLog))
+
+    this.freqLabels.forEach(label => {
+      label.posX = Math.round(bandWidth * (Math.log10(label.freq) - minLog));
       if (label.freq >= 1000)
         label.freq = (label.freq / 1000) + 'k';
     });
@@ -150,7 +152,7 @@ class App extends Component {
     if (!(this.state.paused)) {
       this.analyser.getByteFrequencyData(this.dataArray);
       //this.analyser.getByteTimeDomainData(this.timeDataArray);
-      this.setState({ audioData: this.dataArray});
+      this.setState({ audioData: this.dataArray });
       //audioTimeData: this.timeDataArray
       this.draw();
     }
@@ -166,18 +168,9 @@ class App extends Component {
     let bar;
     let barHeight = 0;
     let graphData = [audioData.length];
-    canvasCtx.fillStyle = 'hsl(220, 13%, 15%)'; //#282c34
-
-    /*let gradient = {
-        bgColor: 'orange',
-        colorStops: [
-          'hsl( 0, 80%, 50% )', = 0
-          'hsl( 60, 80%, 50% )', = 0.2
-          'hsl( 120, 80%, 50% )', = 0.4
-          'hsl( 180, 80%, 50% )', = 0.6
-          'hsl( 240, 80%, 50% )', = 0.8
-        ]
-    }*/
+    let backgroundColor = 'hsl(220, 13%, 15%)'; //#282c34
+    let backgroundColorAlpha = 'hsl(220, 13%, 15%, 0.7)';
+    canvasCtx.fillStyle = backgroundColor;
 
     //-- GRADIENTS ---//
     let grd = canvasCtx.createLinearGradient(0, 0, 0, canvas.height);
@@ -188,9 +181,19 @@ class App extends Component {
     grd.addColorStop(0.8, 'hsl( 240, 80%, 50% )');
 
     let grdClassic = canvasCtx.createLinearGradient(0, 0, 0, canvas.height);
-    grdClassic.addColorStop(0, 'hsl( 0, 100%, 50% )');
-    grdClassic.addColorStop(0.6, 'hsl( 60, 100%, 50% )');
-    grdClassic.addColorStop(1, 'hsl( 120, 100%, 50% )');
+    grdClassic.addColorStop(0, 'hsl( 0, 100%, 50% )');  // RED
+    grdClassic.addColorStop(0.2, 'hsl( 55, 100%, 50% )'); // YELLOW
+    grdClassic.addColorStop(0.3, 'hsl( 55, 100%, 50% )'); // YELLOW
+    grdClassic.addColorStop(1, 'hsl( 120, 100%, 50% )');  // GREEN
+
+
+    /*
+        grdClassic.addColorStop(0.1, 'hsl( 0, 100%, 50% )');  // RED
+        grdClassic.addColorStop(0.17, 'hsl( 55, 100%, 50% )'); // YELLOW
+        grdClassic.addColorStop(0.2, 'hsl( 55, 100%, 50% )'); // YELLOW
+        grdClassic.addColorStop(0.4, 'hsl( 55, 100%, 50% )'); // YELLOW
+        grdClassic.addColorStop(0.5, 'hsl( 120, 100%, 50% )');  // GREEN
+    */
 
     // Clear canvas
     canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
@@ -234,8 +237,8 @@ class App extends Component {
       }
 
 
-      canvasCtx.fillStyle = grd;
-      
+      // canvasCtx.fillStyle = grd;
+
       /*--- Draw one bar for amplitude (dB) = barHeight
        at the frequency (Hz) = bar.posX ---*/
 
@@ -269,9 +272,9 @@ class App extends Component {
 
 
     // Bar to check gradient
-    // canvasCtx.fillStyle = grdClassic;
-    canvasCtx.fillStyle = grd;
-    //canvasCtx.fillRect(canvas.width-30, canvas.height, 30, -canvas.height);
+    canvasCtx.fillStyle = grdClassic;
+    // canvasCtx.fillStyle = grd;
+    //canvasCtx.fillRect(canvas.width - 30, canvas.height, 30, -canvas.height);
 
 
     //--- VISUALISE FIELD ---//
@@ -329,25 +332,35 @@ class App extends Component {
       }
     }
 
-    // Show scale
-    /* let size = 5 * pixelRatio;
- 
-     if ( isFullscreen() )
-       size *= 2;
- 
-     canvasCtx.fillStyle = '#000c';
-     canvasCtx.fillRect( 0, canvas.height - size * 4, canvas.width, size * 4 );
- 
-     canvasCtx.fillStyle = '#fff';
-     canvasCtx.font = ( size * 2 ) + 'px sans-serif';
-     canvasCtx.textAlign = 'center';
- 
-     freqLabels.forEach( label => canvasCtx.fillText( label.freq, label.posX, canvas.height - size ) );
-   }
+    /*
+    // TEST FOR LABELS X-POS
+    canvasCtx.strokeStyle = 'white'; 
+    canvasCtx.beginPath();
+    canvasCtx.moveTo(244, canvas.height);
+    canvasCtx.lineTo(244, 0);
+    canvasCtx.stroke();
 */
+
+    // Show scale
+    let size = 7;  //  * pixelRatio
+
+    // if ()
+
+    /*
+    if ( isFullscreen() )
+      size *= 2;
+*/
+
+    canvasCtx.fillStyle = backgroundColorAlpha;
+    canvasCtx.fillRect(0, canvas.height - size * 4, canvas.width, size * 4);
+
+    canvasCtx.fillStyle = '#fff';
+    canvasCtx.font = (size * 2) + 'px sans-serif';
+    canvasCtx.textAlign = 'center';
+
+    this.freqLabels.forEach(label => canvasCtx.fillText(label.freq, label.posX, canvas.height - size));
+    canvasCtx.fillText('(Hz)', canvas.width - 20, canvas.height - size); // this.freqLabels[this.freqLabels.length-1].posX + 45
   }
-
-
 
   render() {
     let display = this.state.status ? { display: "block" } : { display: "none" };
@@ -360,13 +373,12 @@ class App extends Component {
 
         <div style={display}>
           <canvas width={this.state.width} height={this.state.height} ref={this.canvas} />
-          <figure>
-            <figcaption>Play to visualize</figcaption>
+          
+            <div className='playerText'>Press play to visualize</div> {/* <img src={playIcon} className='playIcon' alt='play'></img> */}
             <audio controls src={magicAudio} id="player" onPlay={this.handlePlay} onPause={this.handlePause}>
               Your browser does not support the
             <code>audio</code> element.
             </audio>
-          </figure>
         </div>
 
       </div>

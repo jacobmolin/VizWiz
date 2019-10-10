@@ -9,7 +9,6 @@
 
 .App-header {
   background-color: hsl(220, 13%, 15%); /* #282c34 */
-
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -31,12 +30,27 @@
   cursor: pointer;
 }
 
+audio {
+  width: 90%;
+}
 
+.playerText {
+  /*font-family: 'Montserrat', sans-serif;
+  font-size: 16vw;
+  border: 10px solid white;
+  margin: 100px; */
+  padding: 1%;
+  font-weight: bold;
+  color:  hsl(219, 6%, 60%);
+}
+
+.playIcon {
+  width: auto;
+}
 
 canvas {
-  /* width: 100%;
-  display: flex;
+  width: 100%;
+ /* display: flex;
   justify-content: center;
   height: 80vh;*/
-  outline: white, 3px, solid !important;
 }
